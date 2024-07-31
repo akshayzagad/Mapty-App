@@ -3,14 +3,6 @@
 // prettier-ignore
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-const form = document.querySelector('.form');
-const containerWorkouts = document.querySelector('.workouts');
-const inputType = document.querySelector('.form__input--type');
-const inputDistance = document.querySelector('.form__input--distance');
-const inputDuration = document.querySelector('.form__input--duration');
-const inputCadence = document.querySelector('.form__input--cadence');
-const inputElevation = document.querySelector('.form__input--elevation');
-
 class Workout{
     date = new Date();
     id = (Date.now() + '').slice(-10);
@@ -24,6 +16,7 @@ class Workout{
 }
 
 class Running extends Workout {
+    type = 'running';
     constructor(cords, distance, duration, cadence){
         super(cords, distance, duration);
         this.cadence = cadence ; 
@@ -38,6 +31,7 @@ class Running extends Workout {
 }
 
 class Cycling extends Workout {
+    type = 'cycling';
     constructor(cords, distance, duration, elevation) {
         super(cords, distance, duration);
         this.cadence = elevation;
@@ -51,16 +45,27 @@ class Cycling extends Workout {
     }
 }
 
-const  run1 = new Running([39,-12],5.2,24,178);
+/*  const  run1 = new Running([39,-12],5.2,24,178);
 const cycling1 = new Cycling([39, -12], 5.2, 24, 178);
+console.log(run1,cycling1);*/
 
-console.log(run1,cycling1);
-/* ------------------------------------------------------------------  */ 
+/* -------------------------------------------------------------------------------------------------------------------------------------  */ 
+
+// Application Architecher
+
+const form = document.querySelector('.form');
+const containerWorkouts = document.querySelector('.workouts');
+const inputType = document.querySelector('.form__input--type');
+const inputDistance = document.querySelector('.form__input--distance');
+const inputDuration = document.querySelector('.form__input--duration');
+const inputCadence = document.querySelector('.form__input--cadence');
+const inputElevation = document.querySelector('.form__input--elevation');
+
 class App {
 
     #map;
     #mapEvent;
-
+    #workOut= [];
     constructor() {
         this._getPosition();
 
@@ -108,15 +113,61 @@ class App {
     }
 
     _newWorkout(e) {
-        // Clear input field
-        inputDistance.value = inputDuration.value = inputDistance.value = inputElevation.value = '';
-        //Display Marker 
         e.preventDefault();
-        console.log(this.#mapEvent);
+        const vallidInput = (...inputs) => inputs.every(ins => Number.isFinite(ins));
+        const positiveNumber = (...inputs) => inputs.every(ins => ins > 0);
+        /* Get data form Forms Input */
+       
+        const Type = inputType.value;
+        const distance = +inputDistance.value;
+        const duration = +inputDuration.value;
         const { lat, lng } = this.#mapEvent.latlng;
-        L.marker([lat, lng]).addTo(this.#map)
-            .bindPopup(L.popup({ maxWidth: 150, minWidth: 150, autoClose: false, closeOnClick: false, className: 'running - popup' }))
-            .setPopupContent('Workout')
+        let workout;
+        /* If Workout running , create running object */
+
+        if (Type === 'running') {
+            const cadence = +inputCadence.value;
+            if (
+                !vallidInput(distance, duration, cadence) || !positiveNumber(distance, duration, cadence)
+            ) {
+                return alert("Number is not Vallid");
+            }
+
+             workout = new Running([lat, lng], distance, duration, cadence);
+            
+        }
+
+        /* If Workout cycling , create cycling object */
+
+        if (Type === 'cycling') {
+            const elevation = +inputElevation.value;
+            if (
+                // !Number.isFinite(distance) || !Number.isFinite(duration) || !Number.isFinite(elevation)
+                !vallidInput(distance, duration, elevation) || !positiveNumber(distance, duration, elevation)
+            ) {
+                return alert("Number is not Vallid");
+            }
+            workout = new Cycling([lat, lng], distance, duration, elevation);
+        }
+        
+        /* Add New Workout object to Array */
+        this.#workOut.push(workout);
+
+        /* Render workout on map as Form Submitted */
+
+        this.renderWorkoutMarker(workout);
+
+        /* Hide Input value when sumbmitted & Hide Form also */
+        
+        inputDistance.value = inputDuration.value = inputDistance.value = inputElevation.value = ''; 
+       
+    }
+
+    renderWorkoutMarker(workout){
+        console.log(this.#mapEvent);
+        L.marker(workout.cords).addTo(this.#map)
+            .bindPopup(L.popup({ maxWidth: 150, minWidth: 150, autoClose: false, closeOnClick: false, className: `${workout.type}-popup` }))
+            .setPopupContent('workout')
             .openPopup();
     }
 
