@@ -14,7 +14,8 @@ class Workout {
     _setDescription() {
         const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-        this.description = `${this.type[0].toUpperCase()}${this.type.slice(1)} on ${months[this.date.getMonth()]}`;
+        this.description = `${this.type[0].toUpperCase()}${this.type.slice(1)} on  ${months[this.date.getMonth()]
+            } ${this.date.getDate()}`;
     }
 }
 
@@ -69,6 +70,7 @@ const inputElevation = document.querySelector('.form__input--elevation');
 class App {
 
     #map;
+    #mapZoomLevel= 13;
     #mapEvent;
     #workOut = [];
     constructor() {
@@ -77,6 +79,8 @@ class App {
         form.addEventListener('submit', this._newWorkout.bind(this));
 
         inputType.addEventListener('change', this._toggleElevationField);
+
+        containerWorkouts.addEventListener('click', this._moveToPopup.bind(this));
     }
 
     _getPosition() {
@@ -96,7 +100,7 @@ class App {
 
         const cords = [latitude, longitude];
 
-        this.#map = L.map('map').setView(cords, 13);
+        this.#map = L.map('map').setView(cords, this.#mapZoomLevel);
 
         L.tileLayer('https://tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -111,11 +115,11 @@ class App {
         inputDistance.focus();
     }
 
-    _hideForm(){
+    _hideForm() {
         inputDistance.value = inputDuration.value = inputDistance.value = inputElevation.value = '';
         form.style.display = 'none';
         form.classList.add('hidden');
-        setTimeout(() => (form.style.display = 'grid'),1000);
+        setTimeout(() => (form.style.display = 'grid'), 1000);
     }
 
     _toggleElevationField() {
@@ -179,13 +183,13 @@ class App {
         /* Hide Input value when sumbmitted & Hide Form also */
 
         this._hideForm();
-        
+
     }
 
     _renderWorkoutMarker(workout) {
         console.log(this.#mapEvent);
         L.marker(workout.cords).addTo(this.#map)
-            .bindPopup(L.popup({ maxWidth: 150, minWidth: 150, autoClose: false, closeOnClick: false, className: `${workout.type}-popup` }))
+            .bindPopup(L.popup({ maxWidth: 150, minWidth: 180, autoClose: false, closeOnClick: false, className: `${workout.type}-popup` }))
             .setPopupContent(`${workout.type === 'running' ? '🏃‍♂️' : '🚴‍♀️'
                 } ${workout.description}`)
             .openPopup();
@@ -242,6 +246,22 @@ class App {
 
 
         form.insertAdjacentHTML('afterend', html);
+    }
+
+    _moveToPopup(e) {
+
+        const workoutEl = e.target.closest('.workout');
+
+        const workout = this.#workOut.find(work => work.id === workoutEl.dataset.id);
+        console.log(`${workoutEl.dataset.id} is dataset`);
+        
+        // console.log(workout.id);
+        this.#map.setView(workout.cords, this.#mapZoomLevel, {
+            animate: true,
+            pan: {
+                duration: 1,
+            },
+        });
     }
 
 }
